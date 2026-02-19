@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Streakly 🔥</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .habit-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .habit-card:active {
+            transform: scale(0.97);
+        }
+        
+        .modal {
+            animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes modalPop {
+            0% { transform: scale(0.8) translateY(40px); opacity: 0; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        
+        .streak-number {
+            font-size: 3.5rem;
+            line-height: 1;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen pb-24">
+    <!-- Header -->
+    <header class="sticky top-0 bg-zinc-950 border-b border-zinc-800 z-50">
+        <div class="max-w-xl mx-auto px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-gradient-to-br from-orange-400 to-amber-500 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+                    🔥
+                </div>
+                <h1 class="text-3xl font-bold tracking-tighter">Streakly</h1>
+            </div>
+            
+            <div class="flex items-center gap-x-4">
+                <button onclick="enableNotifications()" 
+                        class="flex items-center gap-x-2 bg-zinc-900 hover:bg-zinc-800 transition-colors px-5 py-2.5 rounded-3xl text-sm font-medium">
+                    <i class="fa-solid fa-bell"></i>
+                    <span>Reminders</span>
+                </button>
+                <div onclick="showAddModal()" 
+                     class="w-11 h-11 bg-white text-zinc-950 rounded-3xl flex items-center justify-center text-3xl leading-none shadow-xl active:scale-95 transition-transform">
+                    +
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-xl mx-auto px-6 pt-8">
+        <!-- Stats bar -->
+        <div id="stats" class="grid grid-cols-3 gap-4 mb-8">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Habits list -->
+        <div id="habits-list" class="space-y-5">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="text-7xl mb-6">🌱</div>
+            <h2 class="text-2xl font-semibold mb-2">No habits yet</h2>
+            <p class="text-zinc-400 max-w-xs">Create your first habit and start building unstoppable streaks</p>
+            <button onclick="showAddModal()" 
+                    class="mt-8 bg-white text-zinc-950 px-8 py-4 rounded-3xl font-semibold flex items-center gap-x-3 text-lg active:scale-95 transition-transform">
+                <span>Create first habit</span>
+                <span class="text-2xl">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Floating action button (for larger screens but always visible) -->
+    <button onclick="showAddModal()" 
+            class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-3xl flex items-center justify-center text-5xl shadow-2xl shadow-emerald-500/30 active:scale-95 transition-all z-50 md:hidden">
+        +
+    </button>
+
+    <!-- Add/Edit Modal -->
+    <div id="habit-modal" class="hidden fixed inset-0 bg-black/70 flex items-end sm:items-center justify-center z-[100] pb-8 sm:pb-0">
+        <div class="modal bg-zinc-900 w-full max-w-lg mx-4 rounded-3xl overflow-hidden">
+            <div class="px-6 pt-6 pb-2">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="modal-title" class="text-2xl font-bold">New Habit</h3>
+                    <button onclick="hideModal()" class="w-9 h-9 flex items-center justify-center text-2xl text-zinc-400 hover:text-white">×</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Habit name -->
+                    <div>
+                        <label class="block text-xs uppercase tracking-widest text-zinc-500 mb-1.5">What habit are you building?</label>
+                        <input id="habit-name" 
+                               type="text" 
+                               maxlength="40"
+                               class="w-full bg-zinc-800 border border-zinc-700 focus:border-emerald-500 rounded-2xl px-5 py-4 text-lg outline-none transition-colors"
+                               placeholder="e.g. Drink 8 glasses of water">
+                    </div>
+                    
+                    <!-- Reminder time -->
+                    <div>
+                        <label class="block text-xs uppercase tracking-widest text-zinc-500 mb-1.5">Daily reminder time (optional)</label>
+                        <div class="relative">
+                            <input id="habit-time" 
+                                   type="time"
+                                   class="w-full bg-zinc-800 border border-zinc-700 focus:border-emerald-500 rounded-2xl px-5 py-4 text-lg outline-none transition-colors">
+                            <div class="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-zinc-950 p-6 flex gap-4 border-t border-zinc-800">
+                <button onclick="hideModal()" 
+                        class="flex-1 py-4 text-base font-medium border border-zinc-700 hover:border-zinc-500 transition-colors rounded-3xl">
+                    Cancel
+                </button>
+                <button onclick="saveHabit()" 
+                        class="flex-1 py-4 text-base font-semibold bg-white text-zinc-950 hover:bg-amber-100 transition-colors rounded-3xl">
+                    Save Habit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-zinc-800 border border-emerald-500 text-emerald-400 px-6 py-3 rounded-3xl flex items-center gap-x-3 shadow-2xl text-sm font-medium">
+        <span id="toast-text"></span>
+    </div>
+
+    <script>
+        // Tailwind script already loaded via CDN
+        let habits = []
+        let editingId = null
+        let reminderInterval = null
+
+        function getToday() {
+            return new Date().toLocaleDateString('en-CA') // YYYY-MM-DD local
+        }
+
+        function daysBetween(date1Str, date2Str) {
+            const d1 = new Date(date1Str)
+            const d2 = new Date(date2Str)
+            const diffTime = d2 - d1
+            return Math.floor(diffTime / (1000 * 60 * 60 * 24))
+        }
+
+        function getCurrentStreak(habit) {
+            if (!habit.lastCompleted) return 0
+            const today = getToday()
+            const diff = daysBetween(habit.lastCompleted, today)
+            if (diff === 0 || diff === 1) {
+                return habit.streak
+            }
+            return 0
+        }
+
+        function loadHabits() {
+            const saved = localStorage.getItem('streakly_habits')
+            if (saved) {
+                habits = JSON.parse(saved)
+            }
+        }
+
+        function saveHabits() {
+            localStorage.setItem('streakly_habits', JSON.stringify(habits))
+        }
+
+        function renderStats() {
+            const container = document.getElementById('stats')
+            const total = habits.length
+            const activeStreaks = habits.filter(h => getCurrentStreak(h) > 0).length
+            let longest = 0
+            habits.forEach(h => {
+                if (h.streak > longest) longest = h.streak
+            })
+
+            container.innerHTML = `
+                <div class="bg-zinc-900 rounded-3xl p-4 text-center">
+                    <div class="text-4xl font-bold text-white">${total}</div>
+                    <div class="text-xs text-zinc-400 tracking-widest uppercase mt-1">Habits</div>
+                </div>
+                <div class="bg-zinc-900 rounded-3xl p-4 text-center">
+                    <div class="text-4xl font-bold text-emerald-400">${activeStreaks}</div>
+                    <div class="text-xs text-zinc-400 tracking-widest uppercase mt-1">Active</div>
+                </div>
+                <div class="bg-zinc-900 rounded-3xl p-4 text-center">
+                    <div class="text-4xl font-bold text-orange-400">${longest}</div>
+                    <div class="text-xs text-zinc-400 tracking-widest uppercase mt-1">Longest</div>
+                </div>
+            `
+        }
+
+        function renderHabits() {
+            const container = document.getElementById('habits-list')
+            const empty = document.getElementById('empty-state')
+            
+            container.innerHTML = ''
+            
+            if (habits.length === 0) {
+                empty.classList.remove('hidden')
+                renderStats()
+                return
+            }
+            
+            empty.classList.add('hidden')
+            
+            habits.sort((a, b) => getCurrentStreak(b) - getCurrentStreak(a))
+            
+            habits.forEach(habit => {
+                const displayStreak = getCurrentStreak(habit)
+                const today = getToday()
+                const isDoneToday = habit.lastCompleted === today
+                
+                const cardHTML = `
+                    <div class="habit-card bg-zinc-900 rounded-3xl p-6 border border-transparent hover:border-zinc-700">
+                        <div class="flex justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-x-3">
+                                    <span class="text-3xl">${displayStreak > 4 ? '🔥' : displayStreak > 0 ? '🔥' : '🌱'}</span>
+                                    <h3 class="text-2xl font-semibold leading-none">${habit.name}</h3>
+                                </div>
+                                
+                                <div class="mt-6 flex items-baseline gap-x-1">
+                                    ${displayStreak > 0 ? `
+                                        <span class="streak-number text-orange-400">${displayStreak}</span>
+                                        <span class="text-2xl text-orange-400/70 font-medium">day${displayStreak === 1 ? '' : 's'}</span>
+                                    ` : `
+                                        <span class="text-xl text-zinc-400 font-medium">Ready to start</span>
+                                    `}
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col items-end justify-between">
+                                ${isDoneToday ? `
+                                    <div class="px-5 py-1.5 bg-emerald-900/70 text-emerald-400 text-sm font-medium rounded-3xl flex items-center gap-x-1">
+                                        <i class="fa-solid fa-check"></i>
+                                        <span>Done today</span>
+                                    </div>
+                                ` : ''}
+                                
+                                <div class="flex gap-x-2">
+                                    <button onclick="editHabit('${habit.id}')" 
+                                            class="w-10 h-10 flex items-center justify-center text-xl text-zinc-400 hover:text-white transition-colors">
+                                        ✏️
+                                    </button>
+                                    <button onclick="deleteHabit('${habit.id}')" 
+                                            class="w-10 h-10 flex items-center justify-center text-xl text-red-400/70 hover:text-red-400 transition-colors">
+                                        🗑
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${habit.reminderTime ? `
+                            <div class="mt-5 inline-flex items-center gap-x-2 text-xs bg-zinc-800 text-zinc-400 px-4 py-2 rounded-3xl">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>Reminder at ${habit.reminderTime}</span>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="mt-7">
+                            <button onclick="markDone('${habit.id}')" 
+                                    class="w-full ${isDoneToday 
+                                        ? 'bg-zinc-800 text-zinc-400 cursor-default' 
+                                        : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 active:brightness-90'} 
+                                    py-6 rounded-3xl font-semibold text-xl transition-all flex items-center justify-center gap-x-3">
+                                ${isDoneToday 
+                                    ? '<i class="fa-solid fa-check-circle"></i> Marked complete today' 
+                                    : '<span class="text-2xl">I did it today!</span> <span class="text-3xl">🔥</span>'}
+                            </button>
+                        </div>
+                    </div>
+                `
+                container.innerHTML += cardHTML
+            })
+            
+            renderStats()
+        }
+
+        function markDone(id) {
+            const habit = habits.find(h => h.id === id)
+            if (!habit) return
+            
+            const today = getToday()
+            
+            if (habit.lastCompleted === today) {
+                showToast("Already marked done today! 🔥")
+                return
+            }
+            
+            let newStreak = 1
+            if (habit.lastCompleted) {
+                const diff = daysBetween(habit.lastCompleted, today)
+                if (diff === 1) {
+                    newStreak = habit.streak + 1
+                } else if (diff > 1) {
+                    newStreak = 1
+                }
+            }
+            
+            habit.streak = newStreak
+            habit.lastCompleted = today
+            
+            saveHabits()
+            renderHabits()
+            
+            showToast(`Streak updated! Now at ${newStreak} day${newStreak > 1 ? 's' : ''} 🔥`)
+        }
+
+        function showAddModal() {
+            editingId = null
+            document.getElementById('modal-title').textContent = 'New Habit'
+            document.getElementById('habit-name').value = ''
+            document.getElementById('habit-time').value = ''
+            document.getElementById('habit-modal').classList.remove('hidden')
+            document.getElementById('habit-name').focus()
+        }
+
+        function editHabit(id) {
+            const habit = habits.find(h => h.id === id)
+            if (!habit) return
+            
+            editingId = id
+            document.getElementById('modal-title').textContent = 'Edit Habit'
+            document.getElementById('habit-name').value = habit.name
+            document.getElementById('habit-time').value = habit.reminderTime || ''
+            document.getElementById('habit-modal').classList.remove('hidden')
+        }
+
+        function saveHabit() {
+            const nameInput = document.getElementById('habit-name')
+            const timeInput = document.getElementById('habit-time')
+            
+            const name = nameInput.value.trim()
+            if (!name) {
+                nameInput.classList.add('!border-red-500')
+                setTimeout(() => nameInput.classList.remove('!border-red-500'), 1500)
+                return
+            }
+            
+            const reminderTime = timeInput.value || null
+            
+            if (editingId) {
+                const habit = habits.find(h => h.id === editingId)
+                habit.name = name
+                habit.reminderTime = reminderTime
+            } else {
+                const newHabit = {
+                    id: crypto.randomUUID ? crypto.randomUUID() : 'hab-' + Date.now(),
+                    name: name,
+                    streak: 0,
+                    lastCompleted: null,
+                    reminderTime: reminderTime
+                }
+                habits.push(newHabit)
+            }
+            
+            saveHabits()
+            hideModal()
+            renderHabits()
+            
+            if (!editingId) {
+                showToast('Habit created! Let’s build that streak 🔥')
+            }
+        }
+
+        function hideModal() {
+            document.getElementById('habit-modal').classList.add('hidden')
+        }
+
+        function deleteHabit(id) {
+            if (!confirm('Delete this habit and its streak forever?')) return
+            
+            habits = habits.filter(h => h.id !== id)
+            saveHabits()
+            renderHabits()
+            showToast('Habit deleted')
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast')
+            const text = document.getElementById('toast-text')
+            text.textContent = message
+            toast.classList.remove('hidden')
+            toast.style.transform = 'translate(-50%, 0)'
+            
+            setTimeout(() => {
+                toast.style.transform = 'translate(-50%, 80px)'
+                setTimeout(() => {
+                    toast.classList.add('hidden')
+                }, 300)
+            }, 2800)
+        }
+
+        async function enableNotifications() {
+            if (!('Notification' in window)) {
+                showToast('Notifications not supported in this browser')
+                return
+            }
+            
+            const permission = await Notification.requestPermission()
+            
+            if (permission === 'granted') {
+                showToast('✅ Notifications enabled!')
+                // Test notification
+                new Notification('Streakly Ready!', {
+                    body: 'You will now receive habit reminders when the app is open.',
+                    icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968890.png'
+                })
+            } else {
+                showToast('Permission denied – reminders won’t work')
+            }
+        }
+
+        function checkReminders() {
+            if (!habits.length) return
+            
+            const now = new Date()
+            const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                               now.getMinutes().toString().padStart(2, '0')
+            const today = getToday()
+            
+            habits.forEach(habit => {
+                if (habit.reminderTime === currentTime && habit.lastCompleted !== today) {
+                    if (Notification.permission === 'granted') {
+                        new Notification(`Time for ${habit.name}!`, {
+                            body: `Don’t break your streak 🔥`,
+                            tag: 'streakly-reminder-' + habit.id,
+                            renotify: true
+                        })
+                    }
+                }
+            })
+        }
+
+        function setupReminders() {
+            if (reminderInterval) clearInterval(reminderInterval)
+            // Check every 30 seconds so we don’t miss the exact minute
+            reminderInterval = setInterval(checkReminders, 30000)
+            // Initial check
+            setTimeout(checkReminders, 2000)
+        }
+
+        function init() {
+            loadHabits()
+            renderHabits()
+            setupReminders()
+            
+            // Keyboard support for modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('habit-modal')
+                    if (!modal.classList.contains('hidden')) hideModal()
+                }
+            })
+            
+            // Make it feel like a real app
+            console.log('%cStreakly loaded successfully! Add to Home Screen on your iPhone for the best experience.', 'color:#10b981; font-size:13px')
+        }
+
+        // Start the app
+        window.onload = init
+    </script>
+</body>
+</html>
